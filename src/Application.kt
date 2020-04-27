@@ -1,23 +1,30 @@
 package fr.unistra.rnartist.backend
 
-import io.ktor.application.*
-import io.ktor.response.*
-import io.ktor.request.*
-import io.ktor.routing.*
-import io.ktor.http.*
-import io.ktor.html.*
-import kotlinx.html.*
-import kotlinx.css.*
-import io.ktor.content.*
-import io.ktor.http.content.*
-import com.fasterxml.jackson.databind.*
+import com.fasterxml.jackson.databind.SerializationFeature
 import freemarker.cache.ClassTemplateLoader
-import io.ktor.jackson.*
-import io.ktor.features.*
+import io.ktor.application.Application
+import io.ktor.application.ApplicationCall
+import io.ktor.application.call
+import io.ktor.application.install
+import io.ktor.features.ContentNegotiation
 import io.ktor.freemarker.FreeMarker
 import io.ktor.freemarker.FreeMarkerContent
+import io.ktor.html.respondHtml
+import io.ktor.http.ContentType
+import io.ktor.http.Parameters
+import io.ktor.http.content.*
+import io.ktor.jackson.jackson
+import io.ktor.request.receiveMultipart
+import io.ktor.response.respond
+import io.ktor.response.respondText
+import io.ktor.routing.get
+import io.ktor.routing.post
+import io.ktor.routing.routing
+import kotlinx.css.*
+import kotlinx.html.*
 import org.dizitart.no2.Nitrite
 import java.io.File
+import java.io.FilenameFilter
 
 lateinit var db:Nitrite
 
@@ -68,7 +75,7 @@ fun Application.module(testing: Boolean = false) {
             call.respond(FreeMarkerContent("contact.ftl",null))
         }
 
-        get("/register") {
+        get("/register_user") {
             val queryParameters: Parameters = call.request.queryParameters
             for (p in queryParameters.entries()) {
                 println(p.key)
@@ -76,11 +83,33 @@ fun Application.module(testing: Boolean = false) {
             }
         }
 
-        get("/submit_theme") {
-            val queryParameters: Parameters = call.request.queryParameters
-            for (p in queryParameters.entries()) {
-                println(p.key)
-                println(p.value)
+        post("/submit_theme") {
+            // retrieve all multipart data (suspending)
+            val multipart = call.receiveMultipart()
+            multipart.forEachPart { part ->
+                if (part is PartData.FormItem) {
+                    println(part.name)
+                    println(part.value)
+                }
+                // if part is a file (could be form item)
+                if(part is PartData.FileItem) {
+                    // retrieve file name of upload
+                    val name = part.originalFileName!!
+                    val filter = FilenameFilter { dir: File?, name: String -> name.endsWith(".png") }
+                    val i = File("/Users/fjossinet/tmp/captures/").listFiles(filter).size+1
+                    val file = File("/Users/fjossinet/tmp/captures/toto$i.png")
+
+                    // use InputStream from part to save file
+                    part.streamProvider().use { its ->
+                        // copy the stream to the file with buffering
+                        file.outputStream().buffered().use {
+                            // note that this is blocking
+                            its.copyTo(it)
+                        }
+                    }
+                }
+                // make sure to dispose of the part after use to prevent leaks
+                part.dispose()
             }
         }
 
@@ -111,9 +140,13 @@ fun Application.module(testing: Boolean = false) {
             }
         }
 
-        // Static feature. Try to access `/static/ktor_logo.svg`
         static("/static") {
             resources("static")
+        }
+
+        static("/captures") {
+            staticRootFolder = File("/Users/fjossinet/tmp")
+            files("captures")
         }
 
         get("/json/jackson") {
