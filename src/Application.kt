@@ -28,11 +28,8 @@ import org.dizitart.no2.Nitrite
 import java.io.File
 import java.io.FilenameFilter
 
-
-var db:Nitrite = Nitrite.builder()
-        .compressed()
-        .filePath(File("/Users/fjossinet/tmp/backend").absolutePath)
-        .openOrCreate()
+lateinit var rootDir:File
+lateinit var db:Nitrite
 
 fun main(args: Array<String>): Unit  {
     io.ktor.server.netty.EngineMain.main(args)
@@ -50,11 +47,19 @@ fun Application.module(testing: Boolean = false) {
         templateLoader = ClassTemplateLoader(this::class.java.classLoader, "templates")
     }
 
+    rootDir = File(System.getProperty("user.home"),".rnartistbackend")
+    if (!rootDir.exists()) {
+        rootDir.mkdir()
+        File(rootDir,"captures").mkdir()
+    }
+    db = Nitrite.builder()
+        .compressed()
+        .filePath(File(rootDir,"db").absolutePath)
+        .openOrCreate()
+
     routing {
         get("/") {
-            data class User(val name: String, val email: String)
-            val user = User("Fabrice", "user@example.com")
-            call.respond(FreeMarkerContent("index.ftl", mapOf("user" to user)))
+            call.respond(FreeMarkerContent("index.ftl",null))
         }
 
         get("/news") {
@@ -113,8 +118,8 @@ fun Application.module(testing: Boolean = false) {
                     // retrieve file name of upload
                     val name = part.originalFileName!!
                     val filter = FilenameFilter { dir: File?, name: String -> name.endsWith(".png") }
-                    val i = File("/Users/fjossinet/tmp/captures/").listFiles(filter).size+1
-                    val file = File("/Users/fjossinet/tmp/captures/theme_$i.png")
+                    val i = File(rootDir, "captures").listFiles(filter).size+1
+                    val file = File(File(rootDir, "captures"),"theme_$i.png")
                     theme.put("picture", "theme_$i.png")
 
                     // use InputStream from part to save file
@@ -165,7 +170,7 @@ fun Application.module(testing: Boolean = false) {
         }
 
         static("/captures") {
-            staticRootFolder = File("/Users/fjossinet/tmp")
+            staticRootFolder = rootDir
             files("captures")
         }
 
