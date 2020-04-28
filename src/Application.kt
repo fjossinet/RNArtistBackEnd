@@ -1,5 +1,6 @@
 package fr.unistra.rnartist.backend
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import freemarker.cache.ClassTemplateLoader
 import io.ktor.application.Application
@@ -22,17 +23,18 @@ import io.ktor.routing.post
 import io.ktor.routing.routing
 import kotlinx.css.*
 import kotlinx.html.*
+import org.dizitart.no2.Document
 import org.dizitart.no2.Nitrite
 import java.io.File
 import java.io.FilenameFilter
 
-lateinit var db:Nitrite
+
+var db:Nitrite = Nitrite.builder()
+        .compressed()
+        .filePath(File("/Users/fjossinet/tmp/backend").absolutePath)
+        .openOrCreate()
 
 fun main(args: Array<String>): Unit  {
-    db = Nitrite.builder()
-            .compressed()
-            .filePath(File.createTempFile("rnartist","backend").absolutePath)
-            .openOrCreate()
     io.ktor.server.netty.EngineMain.main(args)
 }
 
@@ -63,10 +65,6 @@ fun Application.module(testing: Boolean = false) {
             call.respond(FreeMarkerContent("layouts.ftl",null))
         }
 
-        get("/themes") {
-            call.respond(FreeMarkerContent("themes.ftl",null))
-        }
-
         get("/downloads") {
             call.respond(FreeMarkerContent("downloads.ftl",null))
         }
@@ -75,7 +73,7 @@ fun Application.module(testing: Boolean = false) {
             call.respond(FreeMarkerContent("contact.ftl",null))
         }
 
-        get("/register_user") {
+        get("/api/register_user") {
             val queryParameters: Parameters = call.request.queryParameters
             for (p in queryParameters.entries()) {
                 println(p.key)
@@ -83,13 +81,32 @@ fun Application.module(testing: Boolean = false) {
             }
         }
 
-        post("/submit_theme") {
+        data class Theme(val picture:String)
+
+        get("/themes") {
+            val themes = mutableListOf<Theme>()
+            for (doc in db.getCollection("themes").find()) {
+                themes.add(Theme(doc.get("picture") as String))
+            }
+            call.respond(FreeMarkerContent("themes.ftl", mapOf("themes" to themes)))
+        }
+
+        get("/api/all_themes") {
+            val themes = mutableListOf<Theme>()
+            for (doc in db.getCollection("themes").find()) {
+                themes.add(Theme(doc.get("picture") as String))
+            }
+            val mapper = ObjectMapper()
+            call.respond(mapper.writeValueAsString(themes))
+        }
+
+        post("/api/submit_theme") {
             // retrieve all multipart data (suspending)
             val multipart = call.receiveMultipart()
             multipart.forEachPart { part ->
+                val theme = Document()
                 if (part is PartData.FormItem) {
-                    println(part.name)
-                    println(part.value)
+                    theme.put(part.name, part.value)
                 }
                 // if part is a file (could be form item)
                 if(part is PartData.FileItem) {
@@ -97,7 +114,8 @@ fun Application.module(testing: Boolean = false) {
                     val name = part.originalFileName!!
                     val filter = FilenameFilter { dir: File?, name: String -> name.endsWith(".png") }
                     val i = File("/Users/fjossinet/tmp/captures/").listFiles(filter).size+1
-                    val file = File("/Users/fjossinet/tmp/captures/toto$i.png")
+                    val file = File("/Users/fjossinet/tmp/captures/theme_$i.png")
+                    theme.put("picture", "theme_$i.png")
 
                     // use InputStream from part to save file
                     part.streamProvider().use { its ->
@@ -107,6 +125,8 @@ fun Application.module(testing: Boolean = false) {
                             its.copyTo(it)
                         }
                     }
+
+                    db.getCollection("themes").insert(theme)
                 }
                 // make sure to dispose of the part after use to prevent leaks
                 part.dispose()
