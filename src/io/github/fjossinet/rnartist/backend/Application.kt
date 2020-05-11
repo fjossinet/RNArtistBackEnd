@@ -1,4 +1,4 @@
-package fr.unistra.rnartist.backend
+package io.github.fjossinet.rnartist.backend
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature

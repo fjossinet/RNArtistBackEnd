@@ -1,18 +1,7 @@
-package fr.unistra.rnartist.backend
+package io.github.rnartist.backend
 
-import io.ktor.application.*
-import io.ktor.response.*
-import io.ktor.request.*
-import io.ktor.routing.*
 import io.ktor.http.*
-import io.ktor.html.*
-import kotlinx.html.*
-import kotlinx.css.*
-import io.ktor.content.*
-import io.ktor.http.content.*
-import com.fasterxml.jackson.databind.*
-import io.ktor.jackson.*
-import io.ktor.features.*
+import io.github.fjossinet.rnartist.backend.module
 import kotlin.test.*
 import io.ktor.server.testing.*
 
