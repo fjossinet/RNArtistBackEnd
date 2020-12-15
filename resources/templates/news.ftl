@@ -22,9 +22,9 @@
                     </ul>
                     <p>Etiam porta <em>sem malesuada magna</em> mollis euismod. Cras mattis consectetur purus sit amet fermentum. Aenean lacinia bibendum nulla sed consectetur.</p>
                     <p>Donec ullamcorper nulla non metus auctor fringilla. Nulla vitae elit libero, a pharetra augue.</p>
-                </div><!-- /.blog-post -->
+                </div>
 
-            </div><!-- /.blog-main -->
+            </div><
 
         </div>
     </div>

@@ -14,10 +14,6 @@
         </div>
     </section>
 
-    <!-- Marketing messaging and featurettes
-    ================================================== -->
-    <!-- Wrap the rest of the page in another container to center all the content. -->
-
     <div class="container">
 
         <div class="row py-2 text-center">
@@ -169,9 +165,6 @@
             </div>
         </div>
 
-
-        <!-- /END THE FEATURETTES -->
-
-    </div><!-- /.container -->
+    </div>
 
 <#include "/footer.ftl">

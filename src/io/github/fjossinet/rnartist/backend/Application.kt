@@ -2,7 +2,12 @@ package io.github.fjossinet.rnartist.backend
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import freemarker.cache.ClassTemplateLoader
+import io.github.fjossinet.rnartist.core.model.RNA
+import io.github.fjossinet.rnartist.core.model.SecondaryStructure
+import io.github.fjossinet.rnartist.core.model.SecondaryStructureDrawing
 import io.ktor.application.Application
 import io.ktor.application.ApplicationCall
 import io.ktor.application.call
@@ -10,11 +15,11 @@ import io.ktor.application.install
 import io.ktor.features.ContentNegotiation
 import io.ktor.freemarker.FreeMarker
 import io.ktor.freemarker.FreeMarkerContent
+import io.ktor.gson.*
 import io.ktor.html.respondHtml
 import io.ktor.http.ContentType
 import io.ktor.http.Parameters
 import io.ktor.http.content.*
-import io.ktor.jackson.jackson
 import io.ktor.request.receiveMultipart
 import io.ktor.response.respond
 import io.ktor.response.respondText
@@ -35,12 +40,11 @@ fun main(args: Array<String>): Unit  {
     io.ktor.server.netty.EngineMain.main(args)
 }
 
-@Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
     install(ContentNegotiation) {
-        jackson {
-            enable(SerializationFeature.INDENT_OUTPUT)
+        gson {
+            setPrettyPrinting()
         }
     }
     install(FreeMarker) {
@@ -62,6 +66,22 @@ fun Application.module(testing: Boolean = false) {
             call.respond(FreeMarkerContent("index.ftl",null))
         }
 
+        get("/viewer") {
+            var bn = call.request.queryParameters["bn"]
+            var ss = SecondaryStructure(RNA(name = "myRNA", seq = "CGCUGAAUUCAGCG"), bracketNotation = bn)
+            var drawing = SecondaryStructureDrawing(secondaryStructure = ss)
+
+            call.respond(FreeMarkerContent("viewer.ftl",null))
+        }
+
+        get("/api/draw_2d") {
+            var bn = call.request.queryParameters["bn"]
+            var ss = SecondaryStructure(RNA(name = "myRNA", seq = "CGCUGAAUUCAGCG"), bracketNotation = bn)
+            var drawing = SecondaryStructureDrawing(secondaryStructure = ss)
+            call.respond(drawing)
+
+        }
+
         get("/news") {
             call.respond(FreeMarkerContent("news.ftl",null))
         }
@@ -78,22 +98,14 @@ fun Application.module(testing: Boolean = false) {
             call.respond(FreeMarkerContent("contact.ftl",null))
         }
 
+        data class Theme(val picture:String)
+
         get("/api/register_user") {
             val queryParameters: Parameters = call.request.queryParameters
             for (p in queryParameters.entries()) {
                 println(p.key)
                 println(p.value)
             }
-        }
-
-        data class Theme(val picture:String)
-
-        get("/themes") {
-            val themes = mutableListOf<Theme>()
-            for (doc in db.getCollection("themes").find()) {
-                themes.add(Theme(doc.get("picture") as String))
-            }
-            call.respond(FreeMarkerContent("themes.ftl", mapOf("themes" to themes)))
         }
 
         get("/api/all_themes") {
@@ -138,31 +150,12 @@ fun Application.module(testing: Boolean = false) {
             }
         }
 
-        get("/html-dsl") {
-            call.respondHtml {
-                body {
-                    h1 { +"HTML" }
-                    ul {
-                        for (n in 1..10) {
-                            li { +"$n" }
-                        }
-                    }
-                }
+        get("/themes") {
+            val themes = mutableListOf<Theme>()
+            for (doc in db.getCollection("themes").find()) {
+                themes.add(Theme(doc.get("picture") as String))
             }
-        }
-
-        get("/styles.css") {
-            call.respondCss {
-                body {
-                    backgroundColor = Color.red
-                }
-                p {
-                    fontSize = 2.em
-                }
-                rule("p.myclass") {
-                    color = Color.blue
-                }
-            }
+            call.respond(FreeMarkerContent("themes.ftl", mapOf("themes" to themes)))
         }
 
         static("/static") {
@@ -173,23 +166,5 @@ fun Application.module(testing: Boolean = false) {
             staticRootFolder = rootDir
             files("captures")
         }
-
-        get("/json/jackson") {
-            call.respond(mapOf("hello" to "world"))
-        }
     }
-}
-
-fun FlowOrMetaDataContent.styleCss(builder: CSSBuilder.() -> Unit) {
-    style(type = ContentType.Text.CSS.toString()) {
-        +CSSBuilder().apply(builder).toString()
-    }
-}
-
-fun CommonAttributeGroupFacade.style(builder: CSSBuilder.() -> Unit) {
-    this.style = CSSBuilder().apply(builder).toString().trim()
-}
-
-suspend inline fun ApplicationCall.respondCss(builder: CSSBuilder.() -> Unit) {
-    this.respondText(CSSBuilder().apply(builder).toString(), ContentType.Text.CSS)
 }
