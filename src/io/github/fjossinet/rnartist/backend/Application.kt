@@ -40,8 +40,9 @@ lateinit var rootDir:File
 lateinit var db:Nitrite
 
 fun main(args: Array<String>): Unit  {
-    val port = Integer.valueOf(System.getenv("PORT"))
-    embeddedServer(Netty, port, module = Application::module).start()
+    val port = System.getenv("PORT")?.toInt() ?: 8080
+    println(port)
+    embeddedServer(Netty, port, module = Application::module).start(wait = true)
 }
 
 @kotlin.jvm.JvmOverloads
