@@ -1,0 +1,6 @@
+{
+  "name": "RNArtist backend",
+  "description": "The backend for the RNArtist application",
+  "image": "heroku/java",
+  "addons": [ ]
+}
