@@ -26,6 +26,9 @@ import io.ktor.response.respondText
 import io.ktor.routing.get
 import io.ktor.routing.post
 import io.ktor.routing.routing
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import io.ktor.server.netty.EngineMain.main
 import kotlinx.css.*
 import kotlinx.html.*
 import org.dizitart.no2.Document
@@ -37,7 +40,8 @@ lateinit var rootDir:File
 lateinit var db:Nitrite
 
 fun main(args: Array<String>): Unit  {
-    io.ktor.server.netty.EngineMain.main(args)
+    val port = Integer.valueOf(System.getenv("PORT"))
+    embeddedServer(Netty, port, module = Application::module).start()
 }
 
 @kotlin.jvm.JvmOverloads
