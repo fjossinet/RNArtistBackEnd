@@ -91,10 +91,6 @@ fun Application.module(testing: Boolean = false) {
             call.respond(FreeMarkerContent("news.ftl",null))
         }
 
-        get("/layouts") {
-            call.respond(FreeMarkerContent("layouts.ftl",null))
-        }
-
         get("/downloads") {
             call.respond(FreeMarkerContent("downloads.ftl",null))
         }

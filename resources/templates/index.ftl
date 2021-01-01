@@ -5,7 +5,7 @@
             <div class="row">
                 <div class="col-5">
                     <span class="align-bottom float-right py-3"><img src="/static/images/logo.svg" width="450px"/> </span>
-                    <h2 class="display-6 text-white text-right">Construct, Edit, Annotate<br/>and Share Beautiful RNA 2Ds.</h2>
+                    <h2 class="display-6 text-white text-right">Design, Annotate<br/>and Share Beautiful RNA 2Ds.</h2>
                 </div>
                 <div class="col-5">
                     <img class="img-responsive" src="/static/images/imac.png" alt="">
@@ -20,12 +20,12 @@
             <div class="col-lg-4">
                 <span style="color: #4682b4;"><i class="fas fa-pencil-ruler fa-5x"></i></span>
                 <h2>Be an Artist</h2>
-                <p>Customize your RNA 2D to fit your needs, from the organization of junctions and helices (the layout) to the colors, lines and fonts (the theme).</p>
+                <p>Design your RNA 2D to fit your needs, from the organization of junctions and helices (the layout) to the colors, lines and fonts (the theme).</p>
             </div>
             <div class="col-lg-4">
                 <span style="color: steelblue;"><i class="fas fa-users fa-5x"></i></span>
                 <h2>Build a Community</h2>
-                <p>You have designed the best theme? Share it to pimp any 2D! You have added interesting annotations or produced a nice layout for a 2D derived from a PDB structure? Share it too!</p>
+                <p>RNArtist will be regularly updated to provide pre-constructed designs for 2Ds available from databases (Rfam, PDB). Soon, any user will be able to share its own designs too.</p>
             </div>
             <div class="col-lg-4">
                 <span style="color: steelblue;"><i class="fas fa-universal-access fa-5x"></i></span>

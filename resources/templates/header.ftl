@@ -17,16 +17,15 @@
             <a class="py-2 d-none d-md-inline-block" href="/" aria-label="RNArtist">
                 <i class="fas fa-home fa-1x"></i>
             </a>
-            <a class="py-2 d-none d-md-inline-block" href="/viewer">Viewer</a>
             <a class="py-2 d-none d-md-inline-block" href="/news">News</a>
-            <a class="py-2 d-none d-md-inline-block" href="/themes">Themes</a>
-            <a class="py-2 d-none d-md-inline-block" href="/layouts">Layouts</a>
+            <a class="py-2 d-none d-md-inline-block" href="/viewer">Viewer</a>
+            <a class="py-2 d-none d-md-inline-block" href="/themes">Themes & Layouts</a>
             <a class="py-2 d-none d-md-inline-block" href="/downloads">Downloads</a>
             <div class="py-2 d-none d-md-inline-block">
-                <a  href="/">
+                <a href="https://twitter.com/rnartist_app">
                     <i class="fab fa-twitter fa-1x"></i>
                 </a>
-                <a  href="/">
+                <a  href="https://github.com/fjossinet/RNArtist">
                     <i class="fab fa-github fa-1x"></i>
                 </a>
             </div>
