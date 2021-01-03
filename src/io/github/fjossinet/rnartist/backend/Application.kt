@@ -1,36 +1,26 @@
 package io.github.fjossinet.rnartist.backend
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
 import com.google.gson.Gson
-import com.google.gson.GsonBuilder
 import freemarker.cache.ClassTemplateLoader
 import io.github.fjossinet.rnartist.core.model.RNA
 import io.github.fjossinet.rnartist.core.model.SecondaryStructure
 import io.github.fjossinet.rnartist.core.model.SecondaryStructureDrawing
 import io.ktor.application.Application
-import io.ktor.application.ApplicationCall
 import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.features.ContentNegotiation
 import io.ktor.freemarker.FreeMarker
 import io.ktor.freemarker.FreeMarkerContent
 import io.ktor.gson.*
-import io.ktor.html.respondHtml
-import io.ktor.http.ContentType
 import io.ktor.http.Parameters
 import io.ktor.http.content.*
 import io.ktor.request.receiveMultipart
 import io.ktor.response.respond
-import io.ktor.response.respondText
 import io.ktor.routing.get
 import io.ktor.routing.post
 import io.ktor.routing.routing
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import io.ktor.server.netty.EngineMain.main
-import kotlinx.css.*
-import kotlinx.html.*
 import org.dizitart.no2.Document
 import org.dizitart.no2.Nitrite
 import java.io.File
@@ -72,18 +62,18 @@ fun Application.module(testing: Boolean = false) {
         }
 
         get("/viewer") {
-            var bn = call.request.queryParameters["bn"]
-            var ss = SecondaryStructure(RNA(name = "myRNA", seq = "CGCUGAAUUCAGCG"), bracketNotation = bn)
-            var drawing = SecondaryStructureDrawing(secondaryStructure = ss)
+            /*var bn = call.request.queryParameters["bn"]
+            var ss = SecondaryStructure(RNA(name = "myRNA", seq = "CGCUGAAUUCAGCG"), bracketNotation = bn, source="tool:rnartistbackend")
+            var drawing = SecondaryStructureDrawing(secondaryStructure = ss)*/
 
             call.respond(FreeMarkerContent("viewer.ftl",null))
         }
 
         get("/api/draw_2d") {
-            var bn = call.request.queryParameters["bn"]
-            var ss = SecondaryStructure(RNA(name = "myRNA", seq = "CGCUGAAUUCAGCG"), bracketNotation = bn)
+            /*var bn = call.request.queryParameters["bn"]
+            var ss = SecondaryStructure(RNA(name = "myRNA", seq = "CGCUGAAUUCAGCG"), bracketNotation = bn, source="tool:rnartistbackend")
             var drawing = SecondaryStructureDrawing(secondaryStructure = ss)
-            call.respond(drawing)
+            call.respond(drawing)*/
 
         }
 
@@ -99,8 +89,6 @@ fun Application.module(testing: Boolean = false) {
             call.respond(FreeMarkerContent("contact.ftl",null))
         }
 
-        data class Theme(val picture:String)
-
         get("/api/register_user") {
             val queryParameters: Parameters = call.request.queryParameters
             for (p in queryParameters.entries()) {
@@ -109,22 +97,13 @@ fun Application.module(testing: Boolean = false) {
             }
         }
 
-        get("/api/all_themes") {
-            val themes = mutableListOf<Theme>()
-            for (doc in db.getCollection("themes").find()) {
-                themes.add(Theme(doc.get("picture") as String))
-            }
-            val mapper = ObjectMapper()
-            call.respond(mapper.writeValueAsString(themes))
-        }
-
-        post("/api/submit_theme") {
+        post("/api/submit_layout") {
             // retrieve all multipart data (suspending)
             val multipart = call.receiveMultipart()
             multipart.forEachPart { part ->
-                val theme = Document()
+                val layout = Document()
                 if (part is PartData.FormItem) {
-                    theme.put(part.name, part.value)
+                    layout.put(part.name, part.value)
                 }
                 // if part is a file (could be form item)
                 if(part is PartData.FileItem) {
@@ -133,7 +112,7 @@ fun Application.module(testing: Boolean = false) {
                     val filter = FilenameFilter { dir: File?, name: String -> name.endsWith(".png") }
                     val i = File(rootDir, "captures").listFiles(filter).size+1
                     val file = File(File(rootDir, "captures"),"theme_$i.png")
-                    theme.put("picture", "theme_$i.png")
+                    layout.put("picture", "theme_$i.png")
 
                     // use InputStream from part to save file
                     part.streamProvider().use { its ->
@@ -144,19 +123,16 @@ fun Application.module(testing: Boolean = false) {
                         }
                     }
 
-                    db.getCollection("themes").insert(theme)
+                    //db.getCollection("themes").insert(layout)
                 }
+                println(layout.toString())
                 // make sure to dispose of the part after use to prevent leaks
                 part.dispose()
             }
         }
 
         get("/themes") {
-            val themes = mutableListOf<Theme>()
-            for (doc in db.getCollection("themes").find()) {
-                themes.add(Theme(doc.get("picture") as String))
-            }
-            call.respond(FreeMarkerContent("themes.ftl", mapOf("themes" to themes)))
+            call.respond(FreeMarkerContent("themes.ftl", null))
         }
 
         static("/static") {
