@@ -29,14 +29,17 @@ import java.io.FilenameFilter
 import java.io.StringReader
 
 import java.awt.image.BufferedImage
+import java.text.SimpleDateFormat
+import java.util.*
 
 
 lateinit var rootDir:File
 lateinit var db:Nitrite
+var plotsDone = 0
+val currentDate = SimpleDateFormat("dd/M/yyyy hh:mm:ss").format(Date())
 
 fun main(args: Array<String>): Unit  {
     val port = System.getenv("PORT")?.toInt() ?: 8080
-    println(port)
     embeddedServer(Netty, port, module = Application::module).start(wait = true)
 }
 
@@ -177,6 +180,8 @@ fun Application.module(testing: Boolean = false) {
                 at = AffineTransform()
                 at.translate(drawing.workingSession.viewX, drawing.workingSession.viewY)
                 at.scale(drawing.workingSession.finalZoomLevel, drawing.workingSession.finalZoomLevel)
+                plotsDone++
+                System.out.println("Plots done since ${currentDate}: ${plotsDone}");
                 call.respond(
                     FreeMarkerContent(
                         "s2svg.ftl", mapOf(
