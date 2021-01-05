@@ -186,6 +186,7 @@ fun Application.module(testing: Boolean = false) {
                         )
                     )
                 )
+
             } catch (e:Exception) {
                 call.respond(
                     FreeMarkerContent(

@@ -14,7 +14,7 @@
                 <div class="alert alert-danger" role="alert">
                     <h4 class="alert-heading">This is an early release.</h4>
                     <p>The drawing algorithm needs improvements. Each plot will reload the entire page (that's why you will loose your options). The next version will based on WebSocket.</p>
-                    <p>S2SVG runs on a public cloud (<a href="http://heroku.com" target="_blank">Heroku</a>) with a free plan. Free means that the server is slow. If you find this tool useful, <a href="https://twitter.com/rnartist_app" target="_blank">let me know</a> to improve the chances to move to a paying option (as a "laboratoryless" bioinformatician, I'm developing all these projects without any support). </p>
+                    <p>S2SVG runs on a public cloud (<a href="http://heroku.com" target="_blank">Heroku</a>) with a free plan. Free means that the server is slow. If you find this tool useful, <a href="https://twitter.com/rnartist_app" target="_blank">let me know</a> to increase the chances to move to a paying option (as a "laboratoryless" bioinformatician, I'm developing all these projects without any support). </p>
                     <p>No data are stored on the server. S2SVG just keeps track of the number of RNA plots computed.</p>
                 </div>
             </div>
