@@ -10,10 +10,10 @@
         <h2>Overview</h2>
         <div class="row">
             <div class="col-12">
-                <p>S2SVG (for Structure to  SVG) transforms a dot-bracket description of an RNA 2D structure into a 2D plot. You can then further customize your 2D with tools like Adobe illustator or <a href="https://affinity.serif.com/" target="_blank">the Affinity Suite</a>. Like RNArtist, S2SVG is powered by the drawing engine implemented in the project <a href="https://github.com/fjossinet/RNArtistCore" target="_blank">RNArtistCore</a>.</p>
+                <p>S2SVG (for Structure to  SVG) transforms a dot-bracket description of an RNA 2D structure into a beautiful 2D sketch. You can then further customize your 2D with tools like Adobe illustator or <a href="https://affinity.serif.com/" target="_blank">the Affinity Suite</a>. Like RNArtist, S2SVG is powered by the drawing engine implemented in the project <a href="https://github.com/fjossinet/RNArtistCore" target="_blank">RNArtistCore</a>.</p>
                 <div class="alert alert-danger" role="alert">
                     <h4 class="alert-heading">This is an early release.</h4>
-                    <p>The drawing algorithm needs improvements.</p>
+                    <p>The drawing algorithm needs improvements. Each plot will reload the entire page (that's why you will loose your options). The next version will based on WebSocket.</p>
                     <p>S2SVG runs on a public cloud (<a href="http://heroku.com" target="_blank">Heroku</a>) with a free plan. Free means that the server is slow. If you find this tool useful, <a href="https://twitter.com/rnartist_app" target="_blank">let me know</a> to improve the chances to move to a paying option (as a "laboratoryless" bioinformatician, I'm developing all these projects without any support). </p>
                     <p>No data are stored on the server. S2SVG just keeps track of the number of RNA plots computed.</p>
                 </div>
@@ -51,13 +51,13 @@
                     <fieldset>
                         <legend><strong>Step1:</strong> describe your RNA</legend>
                         <div class="form-group">
-                            <label for="seq">Your sequence (if empty, S2SVG will generate a random sequence.)</label>
+                            <label for="seq">Your sequence</label>
                             <div class="col-sm-12">
                                 <textarea class="form-control" style="min-width: 100%" name="seq" id="seq" rows="3"><#if seq??>${seq}<#else>GGGACCGCCCGGGAAACGGGCGAAAAACGAGGUGCGGGCACCUCGUGACGACGGGAGUUCGACCGUGACGCAUGCGGAAAUUGGAGGUGAGUUCGCGAAUACGCAAGCGAAUACGCCCUGCUUACCGAAGCAAGCG</#if></textarea>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="bn">Your structure (mandatory, dot-bracket notation)</label>
+                            <label for="bn">Your structure (dot-bracket notation)</label>
                             <div class="col-sm-12">
                                 <textarea class="form-control" style="min-width: 100%" name="bn" id="bn" rows="3"><#if bn??>${bn}<#else>.....((((((.....))))))....((((((((....))))))))....((((........))))..(((.(((..........(((((((..(((....)))..(((....)))...)))))))...))).)))</#if></textarea>
                             </div>
@@ -91,13 +91,13 @@
                                     <option>Pumpkin Vegas</option>
                                 </select>
                             </div>
-                            <label for="color-schemes" class="col-sm-2 col-form-label">LW Symbols</label>
+                            <!--<label for="color-schemes" class="col-sm-2 col-form-label">LW Symbols</label>
                             <div class="col-sm-2">
                                 <select class="form-control" name="lw-symbols" id="lw-symbols">
                                     <option>Display</option>
                                     <option>Hide</option>
                                 </select>
-                            </div>
+                            </div>-->
                         </div>
                     </fieldset>
                     <button type="submit" class="btn btn-primary">Plot!</button>
