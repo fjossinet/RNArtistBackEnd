@@ -13,7 +13,7 @@
                 <p>S2SVG (for Structure to  SVG) transforms a dot-bracket description of an RNA 2D structure into a beautiful 2D sketch. You can then further customize your 2D with tools like Adobe illustator or <a href="https://affinity.serif.com/" target="_blank">the Affinity Suite</a>. Like RNArtist, S2SVG is powered by the drawing engine implemented in the project <a href="https://github.com/fjossinet/RNArtistCore" target="_blank">RNArtistCore</a>.</p>
                 <div class="alert alert-danger" role="alert">
                     <h4 class="alert-heading">This is an early release.</h4>
-                    <p>The drawing algorithm needs improvements. Each plot will reload the entire page (that's why you will loose your options). The next version will based on WebSocket.</p>
+                    <p>The drawing algorithm needs improvements. Each plot will reload the entire page (that's why you will loose your options). The next version will be based on WebSocket.</p>
                     <p>S2SVG runs on a public cloud (<a href="http://heroku.com" target="_blank">Heroku</a>) with a free plan. Free means that the server is slow. If you find this tool useful, <a href="https://twitter.com/rnartist_app" target="_blank">let me know</a> to increase the chances to move to a paying option (as a "laboratoryless" bioinformatician, I'm developing all these projects without any support). </p>
                     <p>No data are stored on the server. S2SVG just keeps track of the number of RNA plots computed.</p>
                 </div>
