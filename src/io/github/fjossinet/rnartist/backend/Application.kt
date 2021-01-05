@@ -1,10 +1,9 @@
 package io.github.fjossinet.rnartist.backend
 
-import com.google.gson.Gson
 import freemarker.cache.ClassTemplateLoader
-import io.github.fjossinet.rnartist.core.model.RNA
-import io.github.fjossinet.rnartist.core.model.SecondaryStructure
-import io.github.fjossinet.rnartist.core.model.SecondaryStructureDrawing
+import io.github.fjossinet.rnartist.core.model.*
+import io.github.fjossinet.rnartist.core.model.io.parseVienna
+import io.github.fjossinet.rnartist.core.model.io.toSVG
 import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
@@ -12,10 +11,10 @@ import io.ktor.features.ContentNegotiation
 import io.ktor.freemarker.FreeMarker
 import io.ktor.freemarker.FreeMarkerContent
 import io.ktor.gson.*
-import io.ktor.http.Parameters
+import io.ktor.http.*
 import io.ktor.http.content.*
-import io.ktor.request.receiveMultipart
-import io.ktor.response.respond
+import io.ktor.request.*
+import io.ktor.response.*
 import io.ktor.routing.get
 import io.ktor.routing.post
 import io.ktor.routing.routing
@@ -23,8 +22,14 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import org.dizitart.no2.Document
 import org.dizitart.no2.Nitrite
+import java.awt.Rectangle
+import java.awt.geom.AffineTransform
 import java.io.File
 import java.io.FilenameFilter
+import java.io.StringReader
+
+import java.awt.image.BufferedImage
+
 
 lateinit var rootDir:File
 lateinit var db:Nitrite
@@ -61,19 +66,139 @@ fun Application.module(testing: Boolean = false) {
             call.respond(FreeMarkerContent("index.ftl",null))
         }
 
-        get("/viewer") {
-            /*var bn = call.request.queryParameters["bn"]
-            var ss = SecondaryStructure(RNA(name = "myRNA", seq = "CGCUGAAUUCAGCG"), bracketNotation = bn, source="tool:rnartistbackend")
-            var drawing = SecondaryStructureDrawing(secondaryStructure = ss)*/
-
-            call.respond(FreeMarkerContent("viewer.ftl",null))
+        get("/s2svg") {
+            call.respond(FreeMarkerContent("s2svg.ftl",null))
         }
 
-        get("/api/draw_2d") {
-            /*var bn = call.request.queryParameters["bn"]
-            var ss = SecondaryStructure(RNA(name = "myRNA", seq = "CGCUGAAUUCAGCG"), bracketNotation = bn, source="tool:rnartistbackend")
-            var drawing = SecondaryStructureDrawing(secondaryStructure = ss)
-            call.respond(drawing)*/
+        post("/s2svg") {
+            val postParameters: Parameters = call.receiveParameters()
+            var ss:SecondaryStructure? = null
+            var sequence: String? = null
+            var bn: String? = null
+            var colorScheme: String? = null
+            var lwSymbols: String? = null
+            if (postParameters.contains("examples")) {
+                when(postParameters["examples"]) {
+                    "Homo sapiens small nucleolar RNA, C/D box 3A" -> {
+                        sequence = "AAGACUAUACUUUCAGGGAUCAUUUCUAUAGUGUGUUACUAGAGAAGUUUCUCUGAACGUGUAGAGCACCGAAAACCACGAGGAAGAGAGGUAGCGUUUUCUCCUGAGCGUGAAGCCGGCUUUCUGGCGUUGCUUGGCUGCAACUGCCGUCAGCCAUUGAUGAUCGUUCUUCUCUCCGUAUUGGGGAGUGAGAGGGAGAGAACGCGGUCUGAGUGGU"
+                        bn = "(((((((((((..(((((.....))))).)))))).))))).......(((.((......))))).........(((((..............((((((((((((..(((.......((((...(((((((((......))))).))))..)))).........))).(((((((((....))))))).))..)))))))))))).......)))))"
+                        colorScheme = "Persian Carolina"
+                    }
+                    "Thermus thermophilus 5S rRNA" -> {
+                        sequence = "AAUCCCCCGUGCCCAUAGCGGCGUGGAACCACCCGUUCCCAUUCCGAACACGGAAGUGAAACGCGCCAGCGCCGAUGGUACUGGGCGGGCGACCGCCUGGGAGAGUAGGUCGGUGCGGGGGA"
+                        bn = "..((((((((((.....((((((((....(((((((.............))))..)))...)))))).)).((.((....((((((((....))))))))....)).))...))))))))))"
+                        colorScheme = "Charcoal Lazuli"
+                    }
+                    "Lysine riboswitch RNA from Thermotoga maritima" -> {
+                        sequence = "GGACGGAGGCGCGCCCGAGAUGAGUAGGCUGUCCCAUCAGGGGAGGAAUCGGGGACGGCUGAAAGGCGAGGGCGCCGAAGCGAGCAGAGUUCCUCCCGCUCUGCUUGGCUGGGGGUGAGGGGAAUACCCUUACCACUGUCGCGAAAGCGGAGAGCCGUCCA"
+                        bn = "((((((....(((((((((.......((((((((..................))))))))......)))))))))...((((((((((((.......))))))))).)))(((((((((((.....))))))))))).((((....))))....))))))."
+                        colorScheme = "African Lavender"
+                    }
+                    "Homo sapiens FGF-2 internal ribosome entry site" -> {
+                        sequence = "UUGUGGCCGAAGCCGCCGAACUCAGAGGCCGGCCCCAGAAAACCCGAGCGAGUAGGGGGCGGCGCGCAGGAGGGAGGAGAACUGGGGGCGCGGGAGGCUGGUGGGUGUGGGGGGUGGAGAUGUAGAAGAUGUGACGCCGCGGCCCGGCGGGUGCCAGAUUAGCGGACGGCUGCCCGCGGUUGCAACGGGAUCCCGGGCGCUGCAGCUUGGGAGGCGGCUCUCCCCAGGCGGCGUCCGCGGAGACACCCAUCUGUGAACCCCAGGUCCCGGGCCGCCGGCUCGCCGCGCACCAGGGGCCGGCGGACAGAAGAGCGGCCGAGCGGCUCGAGGCUGGGGGACCGCGGGCGCGGCCGCGCGCUGCCGGGCGGGAGGCUGGGGGGCCGGGGCCGGGGCCGUGCCCGGAGCGGGUCGGAGGCCGGGGCCGGGGCCGGGGGACGGCGGCUCCCCGCGCGGCUCCAGCGGCUCGGGGAUCCCGGCCGGGCCCCGCAGGGACCAUG"
+                        bn = ".............................(((((((.......(((...........((((((((((..............((((((.((((.........((((((...................................(((.(((((((((.............))))))))).........)))....((((((((((.....((((((....))))))...))))))))))......))))))..))))..))))))....((((((((((((................))))))....................)))))).........................))))))))))...)))........)))))))..............((((...)))).........((((((.....(((................((((..........))))(((...)))..)))))))))............"
+                        colorScheme = "Midnight Paradise"
+                    }
+                    "Schizosaccharomyces pombe 18S ribosomal RNA" -> {
+                        sequence = "UACCUGGUUGAUCCUGCCAGUAGUCAUAUGCUUGUCUCAAAGAUUAAGCCAUGCAUGUCUAAGUAUAAGCAAUUUUGUACUGUGAAACUGCGAAUGGCUCAUUAAAUCAGUUAUCGUUUAUUUGAUAGUACCUCAACUACUUGGAUAACCGUGGUAAUUCUAGAGCUAAUACAUGCUAAAAAUCCCGACUUUUUUGGAAGGGAUGUAUUUAUUAGAUAAAAAACCAAUGCCUUCGGGCUUUUUUUGGUGAGUCAUAAUAACUUUUCGAAUCGCAUGGCCUUGCGCCGGCGAUGGUUCAUUCAAAUUUCUGCCCUAUCAACUUUCGAUGGUAGGAUAGAGGCCUACCAUGGUUUUAACGGGUAACGGGGAAUUAGGGUUCGAUUCCGGAGAGGGAGCCUGAGAAACGGCUACCACAUCCAAGGAAGGCAGCAGGCGCGCAAAUUACCCAAUCCCGACACGGGGAGGUAGUGACAAGAAAUAACAAUGCAGGGCCCUUUCGGGUCUUGUAAUUGGAAUGAGUACAAUGUAAAUACCUUAACGAGGAACAAUUGGAGGGCAAGUCUGGUGCCAGCAGCCGCGGUAAUUCCAGCUCCAAUAGCGUAUAUUAAAGUUGUUGCAGUUAAAAAGCUCGUAGUUGAACUUUGAGCCUGGUCGACUGGUCCGCCGCAAGGCGUGUUUACUGGUCAUGACCGGGGUCGUUAACCUUCUGGCAAACUACUCAUGUUCUUUAUUGAGCGUGGUAGGGAACCAGGACUUUUACCUUGAAAAAAUUAGAGUGUUCAAAGCAGGCAAGUUUUGCUCGAAUACAUUAGCAUGGAAUAAUAAAAUAGGACGUGUGGUUCUAUUUUGUUGGUUUCUAGGACCGCCGUAAUGAUUAAUAGGGAUAGUCGGGGGCAUUCGUAUUCAAUUGUCAGAGGUGAAAUUCUUGGAUUUAUUGAAGACGAACUACUGCGAAAGCAUUUGCCAAGGAUGUUUUCAUUAAUCAAGAACGAAAGUUAGGGGAUCGAAGACGAUCAGAUACCGUCGUAGUCUUAACCAUAAACUAUGCCGACUAGGGAUCGGGCAAUGUUUCAUUUAUCGACUUGCUCGGCACCUUACGAGAAAUCAAAGUCUUUGGGUUCCGGGGGGAGUAUGGUCGCAAGGCUGAAACUUAAAGGAAUUGACGGAAGGGCACCACAAUGGAGUGGAGCCUGCGGCUUAAUUUGACUCAACACGGGGAAACUCACCAGGUCCAGACAUAGUAAGGAUUGACAGAUUGAGAGCUCUUUCUUGAUUCUAUGGGUGGUGGUGCAUGGCCGUUCUUAGUUGGUGGAGUGAUUUGUCUGCUUAAUUGCGAUAACGAACGAGACCUUAACCUGCUAAAUAGCUGGAUCAGCCAUUUUGGCUGAUCAUUAGCUUCUUAGAGGGACUAUUGGCAUAAAGCCAAUGGAAGUUUGAGGCAAUAACAGGUCUGUGAUGCCCUUAGAUGUUCUGGGCCGCACGCGCGCUACACUGACGGAGCCAACGAGUUGAAAAAAAUCUUUUGAUUUUUUAUCCUUGGCCGGAAGGUCUGGGUAAUCUUGUUAAACUCCGUCGUGCUGGGGAUAGAGCAUUGCAAUUAUUGCUCUUCAACGAGGAAUUCCUAGUAAGCGCAAGUCAUCAGCUUGCGUUGAAUACGUCCCUGCCCUUUGUACACACCGCCCGUCGCUACUACCGAUUGAAUGGCUUAGUGAGGCCUCUGGAUUGGCUUGUUUCUGCUGGCAACGGCGGAAACAUUGCCGAGAAGUUGGACAAACUUGGUCAUUUAGAGGAAGUAAAAGUCGUAACAAGGUUUCCGUAGGUGAACCUGCGGAAGGAUCAUUA"
+                        bn = "...((((.........))))((((.(((((((.(((((((((.....(((.(((..((...(((..(.((...........)))..))))).....((((.......(((((((..((..(((((((............(((((...(((((((.....)))))))....)))))......(((((((((.....)))))))))(((.(((((((.......(((((.(((....))).....))))).....))))))).)..))...((((.((((.....))))))))..))))))).))))))))).(((..(.(((....((((((((.......))))))))))).....))))...((((((((....))))...))))))))((((((..........)))))).((((....))))...)))))))......(.(((...(((((...))))).)))).)).))))))....((((..(((((((....)))))))..).))).....((((((((.......))))))))........((.((......(.((((((..(((....)))....))))))))).)).))))))))))).....(...(((.......((((...(((.((....((((((((((...((((.(((........)))...)))).....)))))))))).......((((((....((((..(((((........))))).))))....))))))..(((((((((.......(((..(.(...).)..(((.......)))...)))......)))))..)))).....(.((....(.((.(((.............))).))..)..)).)..))...((((((((((.((((((((((((((((((((...(((......)))......))))))))))))....(..((....)))))))))))))))).))))..))))...)))).(..((((((...(((.(((((.........))))).)))))))))..).......((((((.(((..(((((((...((...........)))))))))..)))...((....))...)))....))).))))(((((.((.((((....)))))))))))........(((((.(((((((..((...(((((((((((((((((.(.)((((........))))........(((((((....(((((....(((((((((..........)))))))))..))))).(.((.((((..((((((((((..(((((((((....)))..((((......))))..)))))).....((((((((.((((..(((((.((((((.......))))))...)))))..))))))).((.(((((((...)))))))))....)))))...))))).)))...).))))))))....)))))))...)).)))))))))((..(((((((.(...(((..........................(((.((((....)))).)))....)))....).)))))))....).((((((((((((........))))))))))))..).))))))(...(((((((((.......)))))))))..)..))...)))))))))).))....((.((...(((((((((((.((((((((((((..(((((((((((((((((((((((((((....))))))))))).))))))))))))))))..)))))))))))))))))))))))....))..))....((((((((((....))))))))))........"
+                        colorScheme = "Pacific Dream"
+                    }
+                    "Homo sapiens RNA component of 7SK nuclear ribonucleoprotein" -> {
+                        sequence = "GGAUGUGAGGGCGAUCUGGCUGCGACAUCUGUCACCCCAUUGAUCGCCAGGGUUGAUUCGGCUGAUCUGGCUGGCUAGGCGGGUGUCCCCUUCCUCCCUCACCGCUCCAUGUGCGUCCCUCCCGAAGCUGCGCGCUCGGUCGAAGAGGACGACCAUCCCCGAUAGAGGAGGACCGGUCUUCGGUCAAGGGUAUACGAGUAGCUGCGCUCCCCUGCUAGAACCUCCAAACAAGCUCUCAAGGUCCAUUUGUAGGAGAACGUAGGGUAGUCAAGCUUCCAAGACUCCAGACACAUCCAAAUGAGGCGCUGCAUGUGGCAGUCUGCCUUUCUUUU"
+                        bn = "(((.(((((((.((...((....((((((((((.(((((..(((((((...........))).)))))))..))...)))))))))).)).))..)))))))...))).......((((((((((.((.....))))))(((....(((......))).)))..)))).)).............................(((...((.((((((......((((..(((((.............))))).))))...)))))).))...)))......................(((.((((((((((.....)))))..)))))...)))"
+                        colorScheme = "Atomic Xanadu"
+                    }
+                }
+            } else
+                postParameters.forEach { s, list ->
+                    when(s) {
+                           "seq" -> sequence = list.get(0).trim()
+                           "bn" -> bn = list.get(0).trim()
+                           "color-schemes" -> colorScheme = list.get(0).trim()
+                           "lw-symbols" -> lwSymbols = list.get(0).trim()
+                       }
+                }
+            try {
+                ss = parseVienna(StringReader(">A\n$sequence\n$bn"))
+                val ws = WorkingSession()
+                val t = Theme()
+                t.setConfigurationFor(SecondaryStructureType.Helix, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(SecondaryStructureType.SecondaryInteraction, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(SecondaryStructureType.SingleStrand, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(SecondaryStructureType.SecondaryInteraction, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(SecondaryStructureType.InteractionSymbol, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(SecondaryStructureType.PhosphodiesterBond, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(SecondaryStructureType.Junction, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(SecondaryStructureType.AShape, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(SecondaryStructureType.UShape, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(SecondaryStructureType.GShape, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(SecondaryStructureType.CShape, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(SecondaryStructureType.XShape, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(SecondaryStructureType.A, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(SecondaryStructureType.U, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(SecondaryStructureType.G, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(SecondaryStructureType.C, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(SecondaryStructureType.X, DrawingConfigurationParameter.fulldetails, "true")
+
+                RnartistConfig.colorSchemes.get(colorScheme)!!.forEach { elementType, config ->
+                    config.forEach {
+                        t.setConfigurationFor(SecondaryStructureType.valueOf(elementType), DrawingConfigurationParameter.valueOf(it.key), it.value)
+                    }
+                }
+
+                val drawing = SecondaryStructureDrawing(ss, workingSession = ws)
+
+                val frame = Rectangle(0, 0, 1920, 1080)
+
+                //we compute the zoomLevel to fit the structure in the frame of the canvas2D
+                val widthRatio = drawing.getBounds().bounds2D.width / frame.bounds2D.width
+                val heightRatio = drawing.getBounds().bounds2D.height / frame.bounds2D.height
+                drawing.workingSession.finalZoomLevel =
+                    if (widthRatio > heightRatio) 1.0 / widthRatio else 1.0 / heightRatio
+                var at = AffineTransform()
+                at.scale(drawing.workingSession.finalZoomLevel, drawing.workingSession.finalZoomLevel)
+                val transformedBounds = at.createTransformedShape(drawing.getBounds())
+                drawing.workingSession.viewX = frame.bounds2D.centerX - transformedBounds.bounds2D.centerX
+                drawing.workingSession.viewY = frame.bounds2D.centerY - transformedBounds.bounds2D.centerY
+
+                val image = BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB)
+                val g = image.createGraphics()
+
+                drawing.workingSession.setFont(g, drawing.residues.first())
+
+                drawing.applyTheme(t)
+                drawing.workingSession.junctionsDrawn.addAll(drawing.allJunctions)
+                drawing.workingSession.helicesDrawn.addAll(drawing.allHelices)
+                drawing.workingSession.singleStrandsDrawn.addAll(drawing.singleStrands)
+                drawing.workingSession.phosphoBondsLinkingBranchesDrawn.addAll(drawing.phosphoBonds)
+                drawing.workingSession.locationDrawn = Location(1, drawing.secondaryStructure.length)
+
+                at = AffineTransform()
+                at.translate(drawing.workingSession.viewX, drawing.workingSession.viewY)
+                at.scale(drawing.workingSession.finalZoomLevel, drawing.workingSession.finalZoomLevel)
+                call.respond(
+                    FreeMarkerContent(
+                        "s2svg.ftl", mapOf(
+                            "svg" to toSVG(drawing, frame, at, TertiariesDisplayLevel.None),
+                            "seq" to sequence,
+                            "bn" to bn
+                        )
+                    )
+                )
+            } catch (e:Exception) {
+                call.respond(
+                    FreeMarkerContent(
+                        "s2svg.ftl", mapOf(
+                            "svg" to "<div class=\"alert alert-danger\" role=\"alert\">\n" +
+                                    "I cannot plot your structure. Please check your data.\n" +
+                                    "</div>",
+                            "seq" to sequence,
+                            "bn" to bn
+                        )
+                    )
+                )
+            }
 
         }
 
