@@ -24,9 +24,9 @@
             <div class="col-12">
                 <form action="/s2svg" method="post">
                     <fieldset>
-                        <p>Choose a structure from RNA Central and click on the Plot! button</p>
+                        <p>Choose a structure</p>
                         <div class="form-group row">
-                            <div class="col-sm-6">
+                            <div class="col-6">
                                 <select class="form-control" name="examples" id="examples">
                                     <option>Thermus thermophilus 5S rRNA</option>
                                     <option>Pknots with random sequence</option>
@@ -37,8 +37,29 @@
                                     <option>Schizosaccharomyces pombe 18S ribosomal RNA</option>
                                 </select>
                             </div>
-                            <div class="col-sm-2">
+                            <div class="col-2">
                                 <button type="submit" class="btn btn-primary">Plot!</button>
+                            </div>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+        </div>
+        <h2>Get from databases</h2>
+        <div class="row">
+            <div class="col-12">
+                <form action="/s2svg" method="post">
+                    <fieldset>
+                        <legend>Choose a database</legend>
+                        <div class="form-group row">
+                            <div class="input-group mb-3 col-6">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text" id="rnacentral">RNACentral</span>
+                                </div>
+                                <input type="text" class="form-control" placeholder="example: URS0000162127" name="rnacentral-id" aria-describedby="rnacentral">
+                            </div>
+                            <div class="col-2">
+                                <button type="submit" class="btn btn-primary">Get!</button>
                             </div>
                         </div>
                     </fieldset>
@@ -50,28 +71,31 @@
             <div class="col-12">
                 <form action="/s2svg" method="post">
                     <fieldset>
-                        <legend><strong>Step1:</strong> describe your RNA</legend>
+                        <legend>RNA sequence</legend>
                         <div class="form-group">
-                            <label for="seq">Your sequence (if empty, a random sequence fitting the structure will be generated)</label>
-                            <div class="col-sm-12">
+                            <label for="seq">If empty, a random sequence fitting the structure will be generated</label>
+                            <div class="col-12">
                                 <textarea class="form-control" style="min-width: 100%" name="seq" id="seq" rows="3"><#if seq??>${seq}</#if></textarea>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="bn">Your structure (mandatory, dot-bracket notation)</label>
-                            <div class="col-sm-12">
-                                <textarea class="form-control" style="min-width: 100%" name="bn" id="bn" rows="3"><#if bn??>${bn}<#else>.....((((((.....))))))....((((((((....))))))))....((((........))))..(((.(((..........(((((((..(((....)))..(((....)))...)))))))...))).)))</#if></textarea>
                             </div>
                         </div>
                     </fieldset>
                     <fieldset>
-                        <legend><strong>Step2:</strong> choose your options</legend>
+                        <legend>RNA Structure</legend>
+                        <div class="form-group">
+                            <label for="bn">Mandatory, described with the dot-bracket notation</label>
+                            <div class="col-12">
+                                <textarea class="form-control" style="min-width: 100%" name="bn" id="bn" rows="3"><#if bn??>${bn}</#if></textarea>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Options</legend>
                         <!--<div class="form-group alert alert-secondary" role="alert">
                             more options will be available after the first plot.
                         </div>-->
                         <div class="form-group row">
-                            <label for="color-schemes" class="col-sm-2 col-form-label">Color Schemes</label>
-                            <div class="col-sm-2">
+                            <label for="color-schemes" class="col-2 col-form-label">Color Schemes</label>
+                            <div class="col-2">
                                 <select class="form-control" name="color-schemes" id="color-schemes">
                                     <option>Persian Carolina</option>
                                     <option>Snow Lavender</option>
@@ -92,8 +116,8 @@
                                     <option>Pumpkin Vegas</option>
                                 </select>
                             </div>
-                            <!--<label for="color-schemes" class="col-sm-2 col-form-label">LW Symbols</label>
-                            <div class="col-sm-2">
+                            <!--<label for="color-schemes" class="col-2 col-form-label">LW Symbols</label>
+                            <div class="col-2">
                                 <select class="form-control" name="lw-symbols" id="lw-symbols">
                                     <option>Display</option>
                                     <option>Hide</option>

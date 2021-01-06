@@ -2,6 +2,7 @@ package io.github.fjossinet.rnartist.backend
 
 import freemarker.cache.ClassTemplateLoader
 import io.github.fjossinet.rnartist.core.model.*
+import io.github.fjossinet.rnartist.core.model.io.RNACentral
 import io.github.fjossinet.rnartist.core.model.io.parseVienna
 import io.github.fjossinet.rnartist.core.model.io.toSVG
 import io.ktor.application.Application
@@ -58,99 +59,173 @@ fun Application.module(testing: Boolean = false) {
         templateLoader = ClassTemplateLoader(this::class.java.classLoader, "templates")
     }
 
-    rootDir = File(System.getProperty("user.home"),".rnartistbackend")
+    rootDir = File(System.getProperty("user.home"), ".rnartistbackend")
     if (!rootDir.exists()) {
         rootDir.mkdir()
-        File(rootDir,"captures").mkdir()
+        File(rootDir, "captures").mkdir()
     }
     db = Nitrite.builder()
         .compressed()
-        .filePath(File(rootDir,"db").absolutePath)
+        .filePath(File(rootDir, "db").absolutePath)
         .openOrCreate()
 
     routing {
         get("/") {
-            call.respond(FreeMarkerContent("index.ftl",null))
+            call.respond(FreeMarkerContent("index.ftl", null))
         }
 
         get("/s2svg") {
-            call.respond(FreeMarkerContent("s2svg.ftl",null))
+            call.respond(FreeMarkerContent("s2svg.ftl", null))
         }
 
         post("/s2svg") {
             val postParameters: Parameters = call.receiveParameters()
-            var ss:SecondaryStructure? = null
+            var ss: SecondaryStructure? = null
             var sequence: String? = null
             var bn: String? = null
             var colorScheme: String? = null
             var lwSymbols: String? = null
-            if (postParameters.contains("examples")) {
-                when(postParameters["examples"]) {
-                    "Homo sapiens small nucleolar RNA, C/D box 3A" -> {
-                        sequence = "AAGACUAUACUUUCAGGGAUCAUUUCUAUAGUGUGUUACUAGAGAAGUUUCUCUGAACGUGUAGAGCACCGAAAACCACGAGGAAGAGAGGUAGCGUUUUCUCCUGAGCGUGAAGCCGGCUUUCUGGCGUUGCUUGGCUGCAACUGCCGUCAGCCAUUGAUGAUCGUUCUUCUCUCCGUAUUGGGGAGUGAGAGGGAGAGAACGCGGUCUGAGUGGU"
-                        bn = "(((((((((((..(((((.....))))).)))))).))))).......(((.((......))))).........(((((..............((((((((((((..(((.......((((...(((((((((......))))).))))..)))).........))).(((((((((....))))))).))..)))))))))))).......)))))"
+            try {
+                if (postParameters.contains("rnacentral-id")) {
+                    ss = RNACentral().fetch(postParameters["rnacentral-id"]!!.trim())
+                    ss?.let {
+                        sequence = it.rna.seq
+                        bn = it.toBracketNotation()
                         colorScheme = "Persian Carolina"
                     }
-                    "Pknots with random sequence" -> {
-                        sequence = ""
-                        bn = "....((((....[[[[....))))....]]]]....((((((((..AAAAA....))))))))........BBBBB..aaaaa..bbbbb.."
-                        colorScheme = "Screamin' Olive"
-                    }
-                    "Thermus thermophilus 5S rRNA" -> {
-                        sequence = "AAUCCCCCGUGCCCAUAGCGGCGUGGAACCACCCGUUCCCAUUCCGAACACGGAAGUGAAACGCGCCAGCGCCGAUGGUACUGGGCGGGCGACCGCCUGGGAGAGUAGGUCGGUGCGGGGGA"
-                        bn = "..((((((((((.....((((((((....(((((((.............))))..)))...)))))).)).((.((....((((((((....))))))))....)).))...))))))))))"
-                        colorScheme = "Charcoal Lazuli"
-                    }
-                    "Lysine riboswitch RNA from Thermotoga maritima" -> {
-                        sequence = "GGACGGAGGCGCGCCCGAGAUGAGUAGGCUGUCCCAUCAGGGGAGGAAUCGGGGACGGCUGAAAGGCGAGGGCGCCGAAGCGAGCAGAGUUCCUCCCGCUCUGCUUGGCUGGGGGUGAGGGGAAUACCCUUACCACUGUCGCGAAAGCGGAGAGCCGUCCA"
-                        bn = "((((((....(((((((((.......((((((((..................))))))))......)))))))))...((((((((((((.......))))))))).)))(((((((((((.....))))))))))).((((....))))....))))))."
-                        colorScheme = "African Lavender"
-                    }
-                    "Homo sapiens FGF-2 internal ribosome entry site" -> {
-                        sequence = "UUGUGGCCGAAGCCGCCGAACUCAGAGGCCGGCCCCAGAAAACCCGAGCGAGUAGGGGGCGGCGCGCAGGAGGGAGGAGAACUGGGGGCGCGGGAGGCUGGUGGGUGUGGGGGGUGGAGAUGUAGAAGAUGUGACGCCGCGGCCCGGCGGGUGCCAGAUUAGCGGACGGCUGCCCGCGGUUGCAACGGGAUCCCGGGCGCUGCAGCUUGGGAGGCGGCUCUCCCCAGGCGGCGUCCGCGGAGACACCCAUCUGUGAACCCCAGGUCCCGGGCCGCCGGCUCGCCGCGCACCAGGGGCCGGCGGACAGAAGAGCGGCCGAGCGGCUCGAGGCUGGGGGACCGCGGGCGCGGCCGCGCGCUGCCGGGCGGGAGGCUGGGGGGCCGGGGCCGGGGCCGUGCCCGGAGCGGGUCGGAGGCCGGGGCCGGGGCCGGGGGACGGCGGCUCCCCGCGCGGCUCCAGCGGCUCGGGGAUCCCGGCCGGGCCCCGCAGGGACCAUG"
-                        bn = ".............................(((((((.......(((...........((((((((((..............((((((.((((.........((((((...................................(((.(((((((((.............))))))))).........)))....((((((((((.....((((((....))))))...))))))))))......))))))..))))..))))))....((((((((((((................))))))....................)))))).........................))))))))))...)))........)))))))..............((((...)))).........((((((.....(((................((((..........))))(((...)))..)))))))))............"
-                        colorScheme = "Midnight Paradise"
-                    }
-                    "Schizosaccharomyces pombe 18S ribosomal RNA" -> {
-                        sequence = "UACCUGGUUGAUCCUGCCAGUAGUCAUAUGCUUGUCUCAAAGAUUAAGCCAUGCAUGUCUAAGUAUAAGCAAUUUUGUACUGUGAAACUGCGAAUGGCUCAUUAAAUCAGUUAUCGUUUAUUUGAUAGUACCUCAACUACUUGGAUAACCGUGGUAAUUCUAGAGCUAAUACAUGCUAAAAAUCCCGACUUUUUUGGAAGGGAUGUAUUUAUUAGAUAAAAAACCAAUGCCUUCGGGCUUUUUUUGGUGAGUCAUAAUAACUUUUCGAAUCGCAUGGCCUUGCGCCGGCGAUGGUUCAUUCAAAUUUCUGCCCUAUCAACUUUCGAUGGUAGGAUAGAGGCCUACCAUGGUUUUAACGGGUAACGGGGAAUUAGGGUUCGAUUCCGGAGAGGGAGCCUGAGAAACGGCUACCACAUCCAAGGAAGGCAGCAGGCGCGCAAAUUACCCAAUCCCGACACGGGGAGGUAGUGACAAGAAAUAACAAUGCAGGGCCCUUUCGGGUCUUGUAAUUGGAAUGAGUACAAUGUAAAUACCUUAACGAGGAACAAUUGGAGGGCAAGUCUGGUGCCAGCAGCCGCGGUAAUUCCAGCUCCAAUAGCGUAUAUUAAAGUUGUUGCAGUUAAAAAGCUCGUAGUUGAACUUUGAGCCUGGUCGACUGGUCCGCCGCAAGGCGUGUUUACUGGUCAUGACCGGGGUCGUUAACCUUCUGGCAAACUACUCAUGUUCUUUAUUGAGCGUGGUAGGGAACCAGGACUUUUACCUUGAAAAAAUUAGAGUGUUCAAAGCAGGCAAGUUUUGCUCGAAUACAUUAGCAUGGAAUAAUAAAAUAGGACGUGUGGUUCUAUUUUGUUGGUUUCUAGGACCGCCGUAAUGAUUAAUAGGGAUAGUCGGGGGCAUUCGUAUUCAAUUGUCAGAGGUGAAAUUCUUGGAUUUAUUGAAGACGAACUACUGCGAAAGCAUUUGCCAAGGAUGUUUUCAUUAAUCAAGAACGAAAGUUAGGGGAUCGAAGACGAUCAGAUACCGUCGUAGUCUUAACCAUAAACUAUGCCGACUAGGGAUCGGGCAAUGUUUCAUUUAUCGACUUGCUCGGCACCUUACGAGAAAUCAAAGUCUUUGGGUUCCGGGGGGAGUAUGGUCGCAAGGCUGAAACUUAAAGGAAUUGACGGAAGGGCACCACAAUGGAGUGGAGCCUGCGGCUUAAUUUGACUCAACACGGGGAAACUCACCAGGUCCAGACAUAGUAAGGAUUGACAGAUUGAGAGCUCUUUCUUGAUUCUAUGGGUGGUGGUGCAUGGCCGUUCUUAGUUGGUGGAGUGAUUUGUCUGCUUAAUUGCGAUAACGAACGAGACCUUAACCUGCUAAAUAGCUGGAUCAGCCAUUUUGGCUGAUCAUUAGCUUCUUAGAGGGACUAUUGGCAUAAAGCCAAUGGAAGUUUGAGGCAAUAACAGGUCUGUGAUGCCCUUAGAUGUUCUGGGCCGCACGCGCGCUACACUGACGGAGCCAACGAGUUGAAAAAAAUCUUUUGAUUUUUUAUCCUUGGCCGGAAGGUCUGGGUAAUCUUGUUAAACUCCGUCGUGCUGGGGAUAGAGCAUUGCAAUUAUUGCUCUUCAACGAGGAAUUCCUAGUAAGCGCAAGUCAUCAGCUUGCGUUGAAUACGUCCCUGCCCUUUGUACACACCGCCCGUCGCUACUACCGAUUGAAUGGCUUAGUGAGGCCUCUGGAUUGGCUUGUUUCUGCUGGCAACGGCGGAAACAUUGCCGAGAAGUUGGACAAACUUGGUCAUUUAGAGGAAGUAAAAGUCGUAACAAGGUUUCCGUAGGUGAACCUGCGGAAGGAUCAUUA"
-                        bn = "...((((.........))))((((.(((((((.(((((((((.....(((.(((..((...(((..(.((...........)))..))))).....((((.......(((((((..((..(((((((............(((((...(((((((.....)))))))....)))))......(((((((((.....)))))))))(((.(((((((.......(((((.(((....))).....))))).....))))))).)..))...((((.((((.....))))))))..))))))).))))))))).(((..(.(((....((((((((.......))))))))))).....))))...((((((((....))))...))))))))((((((..........)))))).((((....))))...)))))))......(.(((...(((((...))))).)))).)).))))))....((((..(((((((....)))))))..).))).....((((((((.......))))))))........((.((......(.((((((..(((....)))....))))))))).)).))))))))))).....(...(((.......((((...(((.((....((((((((((...((((.(((........)))...)))).....)))))))))).......((((((....((((..(((((........))))).))))....))))))..(((((((((.......(((..(.(...).)..(((.......)))...)))......)))))..)))).....(.((....(.((.(((.............))).))..)..)).)..))...((((((((((.((((((((((((((((((((...(((......)))......))))))))))))....(..((....)))))))))))))))).))))..))))...)))).(..((((((...(((.(((((.........))))).)))))))))..).......((((((.(((..(((((((...((...........)))))))))..)))...((....))...)))....))).))))(((((.((.((((....)))))))))))........(((((.(((((((..((...(((((((((((((((((.(.)((((........))))........(((((((....(((((....(((((((((..........)))))))))..))))).(.((.((((..((((((((((..(((((((((....)))..((((......))))..)))))).....((((((((.((((..(((((.((((((.......))))))...)))))..))))))).((.(((((((...)))))))))....)))))...))))).)))...).))))))))....)))))))...)).)))))))))((..(((((((.(...(((..........................(((.((((....)))).)))....)))....).)))))))....).((((((((((((........))))))))))))..).))))))(...(((((((((.......)))))))))..)..))...)))))))))).))....((.((...(((((((((((.((((((((((((..(((((((((((((((((((((((((((....))))))))))).))))))))))))))))..)))))))))))))))))))))))....))..))....((((((((((....))))))))))........"
-                        colorScheme = "Pacific Dream"
-                    }
-                    "Homo sapiens RNA component of 7SK nuclear ribonucleoprotein" -> {
-                        sequence = "GGAUGUGAGGGCGAUCUGGCUGCGACAUCUGUCACCCCAUUGAUCGCCAGGGUUGAUUCGGCUGAUCUGGCUGGCUAGGCGGGUGUCCCCUUCCUCCCUCACCGCUCCAUGUGCGUCCCUCCCGAAGCUGCGCGCUCGGUCGAAGAGGACGACCAUCCCCGAUAGAGGAGGACCGGUCUUCGGUCAAGGGUAUACGAGUAGCUGCGCUCCCCUGCUAGAACCUCCAAACAAGCUCUCAAGGUCCAUUUGUAGGAGAACGUAGGGUAGUCAAGCUUCCAAGACUCCAGACACAUCCAAAUGAGGCGCUGCAUGUGGCAGUCUGCCUUUCUUUU"
-                        bn = "(((.(((((((.((...((....((((((((((.(((((..(((((((...........))).)))))))..))...)))))))))).)).))..)))))))...))).......((((((((((.((.....))))))(((....(((......))).)))..)))).)).............................(((...((.((((((......((((..(((((.............))))).))))...)))))).))...)))......................(((.((((((((((.....)))))..)))))...)))"
-                        colorScheme = "Atomic Xanadu"
-                    }
+                } else {
+                    if (postParameters.contains("examples")) {
+                        when (postParameters["examples"]) {
+                            "Homo sapiens small nucleolar RNA, C/D box 3A" -> {
+                                sequence =
+                                    "AAGACUAUACUUUCAGGGAUCAUUUCUAUAGUGUGUUACUAGAGAAGUUUCUCUGAACGUGUAGAGCACCGAAAACCACGAGGAAGAGAGGUAGCGUUUUCUCCUGAGCGUGAAGCCGGCUUUCUGGCGUUGCUUGGCUGCAACUGCCGUCAGCCAUUGAUGAUCGUUCUUCUCUCCGUAUUGGGGAGUGAGAGGGAGAGAACGCGGUCUGAGUGGU"
+                                bn =
+                                    "(((((((((((..(((((.....))))).)))))).))))).......(((.((......))))).........(((((..............((((((((((((..(((.......((((...(((((((((......))))).))))..)))).........))).(((((((((....))))))).))..)))))))))))).......)))))"
+                                colorScheme = "Persian Carolina"
+                            }
+                            "Pknots with random sequence" -> {
+                                sequence = ""
+                                bn =
+                                    "....((((....[[[[....))))....]]]]....((((((((..AAAAA....))))))))........BBBBB..aaaaa..bbbbb.."
+                                colorScheme = "Screamin' Olive"
+                            }
+                            "Thermus thermophilus 5S rRNA" -> {
+                                sequence =
+                                    "AAUCCCCCGUGCCCAUAGCGGCGUGGAACCACCCGUUCCCAUUCCGAACACGGAAGUGAAACGCGCCAGCGCCGAUGGUACUGGGCGGGCGACCGCCUGGGAGAGUAGGUCGGUGCGGGGGA"
+                                bn =
+                                    "..((((((((((.....((((((((....(((((((.............))))..)))...)))))).)).((.((....((((((((....))))))))....)).))...))))))))))"
+                                colorScheme = "Charcoal Lazuli"
+                            }
+                            "Lysine riboswitch RNA from Thermotoga maritima" -> {
+                                sequence =
+                                    "GGACGGAGGCGCGCCCGAGAUGAGUAGGCUGUCCCAUCAGGGGAGGAAUCGGGGACGGCUGAAAGGCGAGGGCGCCGAAGCGAGCAGAGUUCCUCCCGCUCUGCUUGGCUGGGGGUGAGGGGAAUACCCUUACCACUGUCGCGAAAGCGGAGAGCCGUCCA"
+                                bn =
+                                    "((((((....(((((((((.......((((((((..................))))))))......)))))))))...((((((((((((.......))))))))).)))(((((((((((.....))))))))))).((((....))))....))))))."
+                                colorScheme = "African Lavender"
+                            }
+                            "Homo sapiens FGF-2 internal ribosome entry site" -> {
+                                sequence =
+                                    "UUGUGGCCGAAGCCGCCGAACUCAGAGGCCGGCCCCAGAAAACCCGAGCGAGUAGGGGGCGGCGCGCAGGAGGGAGGAGAACUGGGGGCGCGGGAGGCUGGUGGGUGUGGGGGGUGGAGAUGUAGAAGAUGUGACGCCGCGGCCCGGCGGGUGCCAGAUUAGCGGACGGCUGCCCGCGGUUGCAACGGGAUCCCGGGCGCUGCAGCUUGGGAGGCGGCUCUCCCCAGGCGGCGUCCGCGGAGACACCCAUCUGUGAACCCCAGGUCCCGGGCCGCCGGCUCGCCGCGCACCAGGGGCCGGCGGACAGAAGAGCGGCCGAGCGGCUCGAGGCUGGGGGACCGCGGGCGCGGCCGCGCGCUGCCGGGCGGGAGGCUGGGGGGCCGGGGCCGGGGCCGUGCCCGGAGCGGGUCGGAGGCCGGGGCCGGGGCCGGGGGACGGCGGCUCCCCGCGCGGCUCCAGCGGCUCGGGGAUCCCGGCCGGGCCCCGCAGGGACCAUG"
+                                bn =
+                                    ".............................(((((((.......(((...........((((((((((..............((((((.((((.........((((((...................................(((.(((((((((.............))))))))).........)))....((((((((((.....((((((....))))))...))))))))))......))))))..))))..))))))....((((((((((((................))))))....................)))))).........................))))))))))...)))........)))))))..............((((...)))).........((((((.....(((................((((..........))))(((...)))..)))))))))............"
+                                colorScheme = "Midnight Paradise"
+                            }
+                            "Schizosaccharomyces pombe 18S ribosomal RNA" -> {
+                                sequence =
+                                    "UACCUGGUUGAUCCUGCCAGUAGUCAUAUGCUUGUCUCAAAGAUUAAGCCAUGCAUGUCUAAGUAUAAGCAAUUUUGUACUGUGAAACUGCGAAUGGCUCAUUAAAUCAGUUAUCGUUUAUUUGAUAGUACCUCAACUACUUGGAUAACCGUGGUAAUUCUAGAGCUAAUACAUGCUAAAAAUCCCGACUUUUUUGGAAGGGAUGUAUUUAUUAGAUAAAAAACCAAUGCCUUCGGGCUUUUUUUGGUGAGUCAUAAUAACUUUUCGAAUCGCAUGGCCUUGCGCCGGCGAUGGUUCAUUCAAAUUUCUGCCCUAUCAACUUUCGAUGGUAGGAUAGAGGCCUACCAUGGUUUUAACGGGUAACGGGGAAUUAGGGUUCGAUUCCGGAGAGGGAGCCUGAGAAACGGCUACCACAUCCAAGGAAGGCAGCAGGCGCGCAAAUUACCCAAUCCCGACACGGGGAGGUAGUGACAAGAAAUAACAAUGCAGGGCCCUUUCGGGUCUUGUAAUUGGAAUGAGUACAAUGUAAAUACCUUAACGAGGAACAAUUGGAGGGCAAGUCUGGUGCCAGCAGCCGCGGUAAUUCCAGCUCCAAUAGCGUAUAUUAAAGUUGUUGCAGUUAAAAAGCUCGUAGUUGAACUUUGAGCCUGGUCGACUGGUCCGCCGCAAGGCGUGUUUACUGGUCAUGACCGGGGUCGUUAACCUUCUGGCAAACUACUCAUGUUCUUUAUUGAGCGUGGUAGGGAACCAGGACUUUUACCUUGAAAAAAUUAGAGUGUUCAAAGCAGGCAAGUUUUGCUCGAAUACAUUAGCAUGGAAUAAUAAAAUAGGACGUGUGGUUCUAUUUUGUUGGUUUCUAGGACCGCCGUAAUGAUUAAUAGGGAUAGUCGGGGGCAUUCGUAUUCAAUUGUCAGAGGUGAAAUUCUUGGAUUUAUUGAAGACGAACUACUGCGAAAGCAUUUGCCAAGGAUGUUUUCAUUAAUCAAGAACGAAAGUUAGGGGAUCGAAGACGAUCAGAUACCGUCGUAGUCUUAACCAUAAACUAUGCCGACUAGGGAUCGGGCAAUGUUUCAUUUAUCGACUUGCUCGGCACCUUACGAGAAAUCAAAGUCUUUGGGUUCCGGGGGGAGUAUGGUCGCAAGGCUGAAACUUAAAGGAAUUGACGGAAGGGCACCACAAUGGAGUGGAGCCUGCGGCUUAAUUUGACUCAACACGGGGAAACUCACCAGGUCCAGACAUAGUAAGGAUUGACAGAUUGAGAGCUCUUUCUUGAUUCUAUGGGUGGUGGUGCAUGGCCGUUCUUAGUUGGUGGAGUGAUUUGUCUGCUUAAUUGCGAUAACGAACGAGACCUUAACCUGCUAAAUAGCUGGAUCAGCCAUUUUGGCUGAUCAUUAGCUUCUUAGAGGGACUAUUGGCAUAAAGCCAAUGGAAGUUUGAGGCAAUAACAGGUCUGUGAUGCCCUUAGAUGUUCUGGGCCGCACGCGCGCUACACUGACGGAGCCAACGAGUUGAAAAAAAUCUUUUGAUUUUUUAUCCUUGGCCGGAAGGUCUGGGUAAUCUUGUUAAACUCCGUCGUGCUGGGGAUAGAGCAUUGCAAUUAUUGCUCUUCAACGAGGAAUUCCUAGUAAGCGCAAGUCAUCAGCUUGCGUUGAAUACGUCCCUGCCCUUUGUACACACCGCCCGUCGCUACUACCGAUUGAAUGGCUUAGUGAGGCCUCUGGAUUGGCUUGUUUCUGCUGGCAACGGCGGAAACAUUGCCGAGAAGUUGGACAAACUUGGUCAUUUAGAGGAAGUAAAAGUCGUAACAAGGUUUCCGUAGGUGAACCUGCGGAAGGAUCAUUA"
+                                bn =
+                                    "...((((.........))))((((.(((((((.(((((((((.....(((.(((..((...(((..(.((...........)))..))))).....((((.......(((((((..((..(((((((............(((((...(((((((.....)))))))....)))))......(((((((((.....)))))))))(((.(((((((.......(((((.(((....))).....))))).....))))))).)..))...((((.((((.....))))))))..))))))).))))))))).(((..(.(((....((((((((.......))))))))))).....))))...((((((((....))))...))))))))((((((..........)))))).((((....))))...)))))))......(.(((...(((((...))))).)))).)).))))))....((((..(((((((....)))))))..).))).....((((((((.......))))))))........((.((......(.((((((..(((....)))....))))))))).)).))))))))))).....(...(((.......((((...(((.((....((((((((((...((((.(((........)))...)))).....)))))))))).......((((((....((((..(((((........))))).))))....))))))..(((((((((.......(((..(.(...).)..(((.......)))...)))......)))))..)))).....(.((....(.((.(((.............))).))..)..)).)..))...((((((((((.((((((((((((((((((((...(((......)))......))))))))))))....(..((....)))))))))))))))).))))..))))...)))).(..((((((...(((.(((((.........))))).)))))))))..).......((((((.(((..(((((((...((...........)))))))))..)))...((....))...)))....))).))))(((((.((.((((....)))))))))))........(((((.(((((((..((...(((((((((((((((((.(.)((((........))))........(((((((....(((((....(((((((((..........)))))))))..))))).(.((.((((..((((((((((..(((((((((....)))..((((......))))..)))))).....((((((((.((((..(((((.((((((.......))))))...)))))..))))))).((.(((((((...)))))))))....)))))...))))).)))...).))))))))....)))))))...)).)))))))))((..(((((((.(...(((..........................(((.((((....)))).)))....)))....).)))))))....).((((((((((((........))))))))))))..).))))))(...(((((((((.......)))))))))..)..))...)))))))))).))....((.((...(((((((((((.((((((((((((..(((((((((((((((((((((((((((....))))))))))).))))))))))))))))..)))))))))))))))))))))))....))..))....((((((((((....))))))))))........"
+                                colorScheme = "Pacific Dream"
+                            }
+                            "Homo sapiens RNA component of 7SK nuclear ribonucleoprotein" -> {
+                                sequence =
+                                    "GGAUGUGAGGGCGAUCUGGCUGCGACAUCUGUCACCCCAUUGAUCGCCAGGGUUGAUUCGGCUGAUCUGGCUGGCUAGGCGGGUGUCCCCUUCCUCCCUCACCGCUCCAUGUGCGUCCCUCCCGAAGCUGCGCGCUCGGUCGAAGAGGACGACCAUCCCCGAUAGAGGAGGACCGGUCUUCGGUCAAGGGUAUACGAGUAGCUGCGCUCCCCUGCUAGAACCUCCAAACAAGCUCUCAAGGUCCAUUUGUAGGAGAACGUAGGGUAGUCAAGCUUCCAAGACUCCAGACACAUCCAAAUGAGGCGCUGCAUGUGGCAGUCUGCCUUUCUUUU"
+                                bn =
+                                    "(((.(((((((.((...((....((((((((((.(((((..(((((((...........))).)))))))..))...)))))))))).)).))..)))))))...))).......((((((((((.((.....))))))(((....(((......))).)))..)))).)).............................(((...((.((((((......((((..(((((.............))))).))))...)))))).))...)))......................(((.((((((((((.....)))))..)))))...)))"
+                                colorScheme = "Atomic Xanadu"
+                            }
+                        }
+                    } else
+                        postParameters.forEach { s, list ->
+                            when (s) {
+                                "seq" -> sequence = list.get(0).trim()
+                                "bn" -> bn = list.get(0).trim()
+                                "color-schemes" -> colorScheme = list.get(0).trim()
+                                "lw-symbols" -> lwSymbols = list.get(0).trim()
+                            }
+                        }
+                    if (sequence?.length == 0)
+                        ss = parseVienna(StringReader(">A\n$bn"))
+                    else
+                        ss = parseVienna(StringReader(">A\n$sequence\n$bn"))
                 }
-            } else
-                postParameters.forEach { s, list ->
-                    when(s) {
-                           "seq" -> sequence = list.get(0).trim()
-                           "bn" -> bn = list.get(0).trim()
-                           "color-schemes" -> colorScheme = list.get(0).trim()
-                           "lw-symbols" -> lwSymbols = list.get(0).trim()
-                       }
-                }
-            try {
-                if (sequence?.length == 0)
-                    ss = parseVienna(StringReader(">A\n$bn"))
-                else
-                    ss = parseVienna(StringReader(">A\n$sequence\n$bn"))
-                val ws = WorkingSession()
+
                 val t = Theme()
-                t.setConfigurationFor(SecondaryStructureType.Helix, DrawingConfigurationParameter.fulldetails, "true")
-                t.setConfigurationFor(SecondaryStructureType.SecondaryInteraction, DrawingConfigurationParameter.fulldetails, "true")
-                t.setConfigurationFor(SecondaryStructureType.SingleStrand, DrawingConfigurationParameter.fulldetails, "true")
-                t.setConfigurationFor(SecondaryStructureType.PKnot, DrawingConfigurationParameter.fulldetails, "true")
-                t.setConfigurationFor(SecondaryStructureType.TertiaryInteraction, DrawingConfigurationParameter.fulldetails, "true")
-                t.setConfigurationFor(SecondaryStructureType.InteractionSymbol, DrawingConfigurationParameter.fulldetails, "false")
-                t.setConfigurationFor(SecondaryStructureType.PhosphodiesterBond, DrawingConfigurationParameter.fulldetails, "true")
-                t.setConfigurationFor(SecondaryStructureType.Junction, DrawingConfigurationParameter.fulldetails, "true")
-                t.setConfigurationFor(SecondaryStructureType.AShape, DrawingConfigurationParameter.fulldetails, "true")
-                t.setConfigurationFor(SecondaryStructureType.UShape, DrawingConfigurationParameter.fulldetails, "true")
-                t.setConfigurationFor(SecondaryStructureType.GShape, DrawingConfigurationParameter.fulldetails, "true")
-                t.setConfigurationFor(SecondaryStructureType.CShape, DrawingConfigurationParameter.fulldetails, "true")
-                t.setConfigurationFor(SecondaryStructureType.XShape, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(
+                    SecondaryStructureType.Helix,
+                    DrawingConfigurationParameter.fulldetails,
+                    "true"
+                )
+                t.setConfigurationFor(
+                    SecondaryStructureType.SecondaryInteraction,
+                    DrawingConfigurationParameter.fulldetails,
+                    "true"
+                )
+                t.setConfigurationFor(
+                    SecondaryStructureType.SingleStrand,
+                    DrawingConfigurationParameter.fulldetails,
+                    "true"
+                )
+                t.setConfigurationFor(
+                    SecondaryStructureType.PKnot,
+                    DrawingConfigurationParameter.fulldetails,
+                    "true"
+                )
+                t.setConfigurationFor(
+                    SecondaryStructureType.TertiaryInteraction,
+                    DrawingConfigurationParameter.fulldetails,
+                    "true"
+                )
+                t.setConfigurationFor(
+                    SecondaryStructureType.InteractionSymbol,
+                    DrawingConfigurationParameter.fulldetails,
+                    "false"
+                )
+                t.setConfigurationFor(
+                    SecondaryStructureType.PhosphodiesterBond,
+                    DrawingConfigurationParameter.fulldetails,
+                    "true"
+                )
+                t.setConfigurationFor(
+                    SecondaryStructureType.Junction,
+                    DrawingConfigurationParameter.fulldetails,
+                    "true"
+                )
+                t.setConfigurationFor(
+                    SecondaryStructureType.AShape,
+                    DrawingConfigurationParameter.fulldetails,
+                    "true"
+                )
+                t.setConfigurationFor(
+                    SecondaryStructureType.UShape,
+                    DrawingConfigurationParameter.fulldetails,
+                    "true"
+                )
+                t.setConfigurationFor(
+                    SecondaryStructureType.GShape,
+                    DrawingConfigurationParameter.fulldetails,
+                    "true"
+                )
+                t.setConfigurationFor(
+                    SecondaryStructureType.CShape,
+                    DrawingConfigurationParameter.fulldetails,
+                    "true"
+                )
+                t.setConfigurationFor(
+                    SecondaryStructureType.XShape,
+                    DrawingConfigurationParameter.fulldetails,
+                    "true"
+                )
                 t.setConfigurationFor(SecondaryStructureType.A, DrawingConfigurationParameter.fulldetails, "true")
                 t.setConfigurationFor(SecondaryStructureType.U, DrawingConfigurationParameter.fulldetails, "true")
                 t.setConfigurationFor(SecondaryStructureType.G, DrawingConfigurationParameter.fulldetails, "true")
@@ -159,11 +234,15 @@ fun Application.module(testing: Boolean = false) {
 
                 RnartistConfig.colorSchemes.get(colorScheme)!!.forEach { elementType, config ->
                     config.forEach {
-                        t.setConfigurationFor(SecondaryStructureType.valueOf(elementType), DrawingConfigurationParameter.valueOf(it.key), it.value)
+                        t.setConfigurationFor(
+                            SecondaryStructureType.valueOf(elementType),
+                            DrawingConfigurationParameter.valueOf(it.key),
+                            it.value
+                        )
                     }
                 }
 
-                val drawing = SecondaryStructureDrawing(ss, workingSession = ws)
+                val drawing = SecondaryStructureDrawing(ss!!, WorkingSession())
 
                 val frame = Rectangle(0, 0, 1920, 1080)
 
@@ -204,8 +283,7 @@ fun Application.module(testing: Boolean = false) {
                         )
                     )
                 )
-
-            } catch (e:Exception) {
+            } catch (e: Exception) {
                 call.respond(
                     FreeMarkerContent(
                         "s2svg.ftl", mapOf(
@@ -222,15 +300,15 @@ fun Application.module(testing: Boolean = false) {
         }
 
         get("/news") {
-            call.respond(FreeMarkerContent("news.ftl",null))
+            call.respond(FreeMarkerContent("news.ftl", null))
         }
 
         get("/downloads") {
-            call.respond(FreeMarkerContent("downloads.ftl",null))
+            call.respond(FreeMarkerContent("downloads.ftl", null))
         }
 
         get("/contact") {
-            call.respond(FreeMarkerContent("contact.ftl",null))
+            call.respond(FreeMarkerContent("contact.ftl", null))
         }
 
         get("/api/register_user") {
@@ -250,12 +328,12 @@ fun Application.module(testing: Boolean = false) {
                     layout.put(part.name, part.value)
                 }
                 // if part is a file (could be form item)
-                if(part is PartData.FileItem) {
+                if (part is PartData.FileItem) {
                     // retrieve file name of upload
                     val name = part.originalFileName!!
                     val filter = FilenameFilter { dir: File?, name: String -> name.endsWith(".png") }
-                    val i = File(rootDir, "captures").listFiles(filter).size+1
-                    val file = File(File(rootDir, "captures"),"theme_$i.png")
+                    val i = File(rootDir, "captures").listFiles(filter).size + 1
+                    val file = File(File(rootDir, "captures"), "theme_$i.png")
                     layout.put("picture", "theme_$i.png")
 
                     // use InputStream from part to save file
