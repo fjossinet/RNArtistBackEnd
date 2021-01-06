@@ -31,12 +31,16 @@ import java.io.StringReader
 import java.awt.image.BufferedImage
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.GregorianCalendar
+
+
+
 
 
 lateinit var rootDir:File
 lateinit var db:Nitrite
-var plotsDone = 0
-val currentDate = SimpleDateFormat("dd/M/yyyy hh:mm:ss").format(Date())
+var plotsDone = 102
+val currentDate = SimpleDateFormat("dd/M/yyyy hh:mm:ss").format(GregorianCalendar(2021, 1, 5).time)
 
 fun main(args: Array<String>): Unit  {
     val port = System.getenv("PORT")?.toInt() ?: 8080
@@ -87,6 +91,11 @@ fun Application.module(testing: Boolean = false) {
                         bn = "(((((((((((..(((((.....))))).)))))).))))).......(((.((......))))).........(((((..............((((((((((((..(((.......((((...(((((((((......))))).))))..)))).........))).(((((((((....))))))).))..)))))))))))).......)))))"
                         colorScheme = "Persian Carolina"
                     }
+                    "Pknots with random sequence" -> {
+                        sequence = ""
+                        bn = "....((((....[[[[....))))....]]]]....((((((((..AAAAA....))))))))........BBBBB..aaaaa..bbbbb.."
+                        colorScheme = "Screamin' Olive"
+                    }
                     "Thermus thermophilus 5S rRNA" -> {
                         sequence = "AAUCCCCCGUGCCCAUAGCGGCGUGGAACCACCCGUUCCCAUUCCGAACACGGAAGUGAAACGCGCCAGCGCCGAUGGUACUGGGCGGGCGACCGCCUGGGAGAGUAGGUCGGUGCGGGGGA"
                         bn = "..((((((((((.....((((((((....(((((((.............))))..)))...)))))).)).((.((....((((((((....))))))))....)).))...))))))))))"
@@ -123,14 +132,18 @@ fun Application.module(testing: Boolean = false) {
                        }
                 }
             try {
-                ss = parseVienna(StringReader(">A\n$sequence\n$bn"))
+                if (sequence?.length == 0)
+                    ss = parseVienna(StringReader(">A\n$bn"))
+                else
+                    ss = parseVienna(StringReader(">A\n$sequence\n$bn"))
                 val ws = WorkingSession()
                 val t = Theme()
                 t.setConfigurationFor(SecondaryStructureType.Helix, DrawingConfigurationParameter.fulldetails, "true")
                 t.setConfigurationFor(SecondaryStructureType.SecondaryInteraction, DrawingConfigurationParameter.fulldetails, "true")
                 t.setConfigurationFor(SecondaryStructureType.SingleStrand, DrawingConfigurationParameter.fulldetails, "true")
-                t.setConfigurationFor(SecondaryStructureType.SecondaryInteraction, DrawingConfigurationParameter.fulldetails, "true")
-                t.setConfigurationFor(SecondaryStructureType.InteractionSymbol, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(SecondaryStructureType.PKnot, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(SecondaryStructureType.TertiaryInteraction, DrawingConfigurationParameter.fulldetails, "true")
+                t.setConfigurationFor(SecondaryStructureType.InteractionSymbol, DrawingConfigurationParameter.fulldetails, "false")
                 t.setConfigurationFor(SecondaryStructureType.PhosphodiesterBond, DrawingConfigurationParameter.fulldetails, "true")
                 t.setConfigurationFor(SecondaryStructureType.Junction, DrawingConfigurationParameter.fulldetails, "true")
                 t.setConfigurationFor(SecondaryStructureType.AShape, DrawingConfigurationParameter.fulldetails, "true")
@@ -185,7 +198,7 @@ fun Application.module(testing: Boolean = false) {
                 call.respond(
                     FreeMarkerContent(
                         "s2svg.ftl", mapOf(
-                            "svg" to toSVG(drawing, frame, at, TertiariesDisplayLevel.None),
+                            "svg" to toSVG(drawing, frame, at, TertiariesDisplayLevel.All),
                             "seq" to sequence,
                             "bn" to bn
                         )

@@ -29,6 +29,7 @@
                             <div class="col-sm-6">
                                 <select class="form-control" name="examples" id="examples">
                                     <option>Thermus thermophilus 5S rRNA</option>
+                                    <option>Pknots with random sequence</option>
                                     <option>Lysine riboswitch RNA from Thermotoga maritima</option>
                                     <option>Homo sapiens RNA component of 7SK nuclear ribonucleoprotein</option>
                                     <option>Homo sapiens small nucleolar RNA, C/D box 3A</option>
@@ -51,13 +52,13 @@
                     <fieldset>
                         <legend><strong>Step1:</strong> describe your RNA</legend>
                         <div class="form-group">
-                            <label for="seq">Your sequence</label>
+                            <label for="seq">Your sequence (if empty, a random sequence fitting the structure will be generated)</label>
                             <div class="col-sm-12">
-                                <textarea class="form-control" style="min-width: 100%" name="seq" id="seq" rows="3"><#if seq??>${seq}<#else>GGGACCGCCCGGGAAACGGGCGAAAAACGAGGUGCGGGCACCUCGUGACGACGGGAGUUCGACCGUGACGCAUGCGGAAAUUGGAGGUGAGUUCGCGAAUACGCAAGCGAAUACGCCCUGCUUACCGAAGCAAGCG</#if></textarea>
+                                <textarea class="form-control" style="min-width: 100%" name="seq" id="seq" rows="3"><#if seq??>${seq}</#if></textarea>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="bn">Your structure (dot-bracket notation)</label>
+                            <label for="bn">Your structure (mandatory, dot-bracket notation)</label>
                             <div class="col-sm-12">
                                 <textarea class="form-control" style="min-width: 100%" name="bn" id="bn" rows="3"><#if bn??>${bn}<#else>.....((((((.....))))))....((((((((....))))))))....((((........))))..(((.(((..........(((((((..(((....)))..(((....)))...)))))))...))).)))</#if></textarea>
                             </div>
@@ -65,9 +66,9 @@
                     </fieldset>
                     <fieldset>
                         <legend><strong>Step2:</strong> choose your options</legend>
-                        <div class="form-group alert alert-secondary" role="alert">
+                        <!--<div class="form-group alert alert-secondary" role="alert">
                             more options will be available after the first plot.
-                        </div>
+                        </div>-->
                         <div class="form-group row">
                             <label for="color-schemes" class="col-sm-2 col-form-label">Color Schemes</label>
                             <div class="col-sm-2">

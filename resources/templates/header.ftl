@@ -9,6 +9,9 @@
     <link href="/static/css/rnartist.css" rel="stylesheet">
     <link href="/static/css/fontawesome.min.css" rel="stylesheet">
 
+    <script src="/static/js/jquery-3.4.1.slim.min.js">
+    </script>
+
 </head>
 <body>
 <header>
